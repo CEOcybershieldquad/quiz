@@ -1,0 +1,496 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: XADON CBT SaaS API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Session authentication
+  - name: dashboard
+    description: Learning workspace overview
+  - name: exams
+    description: Exam management
+  - name: questions
+    description: Question bank and public discovery
+  - name: ai
+    description: AI learning helpers
+  - name: security
+    description: Defensive security utilities
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /auth/signup:
+    post:
+      operationId: signup
+      tags: [auth]
+      summary: Create a learner account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupInput"
+      responses:
+        "201":
+          description: Created account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Invalid signup
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Start a session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Authenticated account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get the current session
+      responses:
+        "200":
+          description: Current account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Not authenticated
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: End the current session
+      responses:
+        "204":
+          description: Session ended
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get workspace metrics
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /exams:
+    get:
+      operationId: getExams
+      tags: [exams]
+      summary: List available exams
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: subject
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Exam list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Exam"
+    post:
+      operationId: createExam
+      tags: [exams]
+      summary: Create an exam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExamInput"
+      responses:
+        "201":
+          description: Created exam
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Exam"
+  /questions:
+    get:
+      operationId: getQuestions
+      tags: [questions]
+      summary: Search the question bank
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: subject
+          schema:
+            type: string
+        - in: query
+          name: difficulty
+          schema:
+            type: string
+            enum: [Easy, Medium, Hard]
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: Question list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Question"
+    post:
+      operationId: createQuestion
+      tags: [questions]
+      summary: Add a question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuestionInput"
+      responses:
+        "201":
+          description: Created question
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Question"
+  /public/questions:
+    get:
+      operationId: getPublicQuestions
+      tags: [questions]
+      summary: Import safe public trivia questions
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+        - in: query
+          name: amount
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        "200":
+          description: Public question results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PublicQuestion"
+  /ai/tutor:
+    post:
+      operationId: askTutor
+      tags: [ai]
+      summary: Ask the learning tutor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TutorInput"
+      responses:
+        "200":
+          description: Tutor response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TutorResponse"
+  /ai/generate:
+    post:
+      operationId: generateQuestions
+      tags: [ai]
+      summary: Generate reviewed question drafts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateQuestionsInput"
+      responses:
+        "200":
+          description: Generated question drafts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GeneratedQuestion"
+  /security/cves:
+    get:
+      operationId: getSecurityCves
+      tags: [security]
+      summary: Search recent public CVE advisories
+      parameters:
+        - in: query
+          name: keyword
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+      responses:
+        "200":
+          description: CVE advisories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SecurityAdvisory"
+  /security/headers:
+    post:
+      operationId: checkSecurityHeaders
+      tags: [security]
+      summary: Check security headers for an owned site
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HeaderCheckInput"
+      responses:
+        "200":
+          description: Header audit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HeaderCheckResult"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    AuthUser:
+      type: object
+      required: [id, name, email, role]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string }
+        role:
+          type: string
+          enum: [student, teacher, admin]
+        streak: { type: integer }
+    SignupInput:
+      type: object
+      required: [name, email, password]
+      properties:
+        name: { type: string, minLength: 2 }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8 }
+        role:
+          type: string
+          enum: [student, teacher]
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+    AuthResponse:
+      type: object
+      required: [user]
+      properties:
+        user: { $ref: "#/components/schemas/AuthUser" }
+    DashboardSummary:
+      type: object
+      required: [questions, exams, accuracy, studyMinutes, streak, recentActivity]
+      properties:
+        questions: { type: integer }
+        exams: { type: integer }
+        accuracy: { type: number }
+        studyMinutes: { type: integer }
+        streak: { type: integer }
+        recentActivity:
+          type: array
+          items: { $ref: "#/components/schemas/Activity" }
+    Activity:
+      type: object
+      required: [id, label, detail, time]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        detail: { type: string }
+        time: { type: string }
+    Exam:
+      type: object
+      required: [id, title, subject, questionCount, durationMinutes, price, status, attempts]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        subject: { type: string }
+        questionCount: { type: integer }
+        durationMinutes: { type: integer }
+        price: { type: number }
+        status:
+          type: string
+          enum: [Published, Draft, Private]
+        attempts: { type: integer }
+    ExamInput:
+      type: object
+      required: [title, subject, durationMinutes]
+      properties:
+        title: { type: string, minLength: 3 }
+        subject: { type: string }
+        durationMinutes: { type: integer, minimum: 1 }
+        price: { type: number, minimum: 0 }
+    Question:
+      type: object
+      required: [id, prompt, subject, type, difficulty, usageCount]
+      properties:
+        id: { type: integer }
+        prompt: { type: string }
+        subject: { type: string }
+        type:
+          type: string
+          enum: [Multiple Choice, True/False, Theory]
+        difficulty:
+          type: string
+          enum: [Easy, Medium, Hard]
+        usageCount: { type: integer }
+        source: { type: string }
+    QuestionInput:
+      type: object
+      required: [prompt, subject, type, difficulty]
+      properties:
+        prompt: { type: string, minLength: 5 }
+        subject: { type: string }
+        type:
+          type: string
+          enum: [Multiple Choice, True/False, Theory]
+        difficulty:
+          type: string
+          enum: [Easy, Medium, Hard]
+        source: { type: string }
+    PublicQuestion:
+      type: object
+      required: [id, prompt, category, difficulty, options, answer]
+      properties:
+        id: { type: string }
+        prompt: { type: string }
+        category: { type: string }
+        difficulty: { type: string }
+        options:
+          type: array
+          items: { type: string }
+        answer: { type: string }
+    TutorInput:
+      type: object
+      required: [prompt, subject]
+      properties:
+        prompt: { type: string, minLength: 2 }
+        subject: { type: string }
+        level: { type: string }
+    TutorResponse:
+      type: object
+      required: [answer, sources, mode]
+      properties:
+        answer: { type: string }
+        sources:
+          type: array
+          items: { type: string }
+        mode: { type: string }
+    GenerateQuestionsInput:
+      type: object
+      required: [subject, topic, count, difficulty]
+      properties:
+        subject: { type: string }
+        topic: { type: string }
+        count: { type: integer, minimum: 1, maximum: 20 }
+        difficulty: { type: string }
+    GeneratedQuestion:
+      type: object
+      required: [prompt, answer, explanation, distractors]
+      properties:
+        prompt: { type: string }
+        answer: { type: string }
+        explanation: { type: string }
+        distractors:
+          type: array
+          items: { type: string }
+    SecurityAdvisory:
+      type: object
+      required: [id, summary, severity, published]
+      properties:
+        id: { type: string }
+        summary: { type: string }
+        severity: { type: string }
+        published: { type: string }
+    HeaderCheckInput:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string, format: uri }
+    HeaderCheckResult:
+      type: object
+      required: [url, score, checks, note]
+      properties:
+        url: { type: string }
+        score: { type: integer }
+        checks:
+          type: array
+          items:
+            type: object
+            required: [name, present, recommendation]
+            properties:
+              name: { type: string }
+              present: { type: boolean }
+              recommendation: { type: string }
+        note: { type: string }
+
